@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import difflib
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -6,8 +6,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 app = Flask(__name__)
 
-# Load dataset from online source
-movie_data = pd.read_csv("https://raw.githubusercontent.com/YBI-Foundation/Dataset/main/Movies%20Recommendation.csv")
+# Load dataset from online
+movie_data = pd.read_csv(
+    "https://raw.githubusercontent.com/YBI-Foundation/Dataset/main/Movies%20Recommendation.csv"
+)
 
 selected_features = ['genres','keywords','tagline','cast','director']
 
@@ -24,7 +26,6 @@ combined_features = (
 
 vectorizer = TfidfVectorizer()
 feature_vectors = vectorizer.fit_transform(combined_features)
-
 similarity = cosine_similarity(feature_vectors)
 
 def recommend(movie_name):
@@ -32,33 +33,30 @@ def recommend(movie_name):
     find_close_match = difflib.get_close_matches(movie_name, list_of_all_titles)
 
     if not find_close_match:
-        return ["Movie not found. Please try another name."]
+        return []
 
     close_match = find_close_match[0]
-    index_of_the_movie = movie_data[movie_data.title == close_match].index[0]
+    index_of_movie = movie_data[movie_data.title == close_match].index[0]
 
-    similarity_score = list(enumerate(similarity[index_of_the_movie]))
-    sorted_similar_movies = sorted(similarity_score, key=lambda x: x[1], reverse=True)
+    similarity_score = list(enumerate(similarity[index_of_movie]))
+    sorted_movies = sorted(similarity_score, key=lambda x: x[1], reverse=True)
 
-    recommended_movies = []
+    recommended = []
+    for movie in sorted_movies[1:11]:
+        recommended.append(movie_data.iloc[movie[0]]['title'])
 
-    for movie in sorted_similar_movies[1:11]:
-        index = movie[0]
-        title = movie_data.iloc[index]['title']
-        recommended_movies.append(title)
+    return recommended
 
-    return recommended_movies
-
-
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
 def home():
-    recommendations = []
-    if request.method == "POST":
-        movie_name = request.form["movie_name"]
-        recommendations = recommend(movie_name)
+    return render_template("index.html")
 
-    return render_template("index.html", recommendations=recommendations)
-
+@app.route("/recommend", methods=["POST"])
+def get_recommendations():
+    data = request.get_json()
+    movie_name = data.get("movie_name")
+    results = recommend(movie_name)
+    return jsonify(results)
 
 if __name__ == "__main__":
     app.run(debug=True)
