@@ -9,20 +9,15 @@
 <div class="container">
     <h1>🎬 Movie Recommendation System</h1>
 
-    <form method="POST">
-        <input type="text" name="movie_name" placeholder="Enter your favourite movie..." required>
-        <button type="submit">Recommend</button>
-    </form>
+    <input type="text" id="movieInput" placeholder="Enter your favourite movie...">
+    <button onclick="getRecommendations()">Recommend</button>
 
-    {% if recommendations %}
-        <h2>Recommended Movies:</h2>
-        <ul>
-            {% for movie in recommendations %}
-                <li>{{ movie }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
+    <div id="loading" class="hidden">Loading...</div>
+
+    <ul id="results"></ul>
 </div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
 
 </body>
 </html>
